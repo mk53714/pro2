@@ -2,108 +2,102 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>キャラクターオセロ</title>
+<title>モテモテ恋愛アプリ</title>
 <style>
-body { font-family: sans-serif; text-align:center; background:#1a1a2e; color:white; }
-#board { display:grid; grid-template-columns: repeat(8,60px); gap:4px; margin:20px auto; }
-.cell { width:60px; height:60px; background:#2e7d32; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; border-radius:8px; }
-.black { background:#111; }
-.white { background:#eee; color:black; }
-.info { margin-top:10px; }
+body{font-family:sans-serif;background:linear-gradient(135deg,#ffe0f0,#e0f7ff);text-align:center;margin:0;padding:0;}
+h1{margin:20px;color:#ff4fa3;}
+#container{max-width:600px;margin:0 auto;padding:20px;}
+.card{background:white;border-radius:20px;padding:20px;margin:20px 0;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+.character{font-size:22px;margin-bottom:10px;}
+.type{font-size:14px;color:#666;margin-bottom:10px;}
+.button{padding:10px 20px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;margin-top:10px;}
+.button:hover{background:#ff2f90;}
+.message{margin-top:15px;font-size:16px;color:#333;}
 </style>
 </head>
 <body>
-<h1>キャラクターオセロ</h1>
-<div id="board"></div>
-<div class="info" id="info"></div>
+<h1>モテモテ恋愛シミュレーション</h1>
+<div id="container">
+  <div class="card">
+    <div class="character" id="name"></div>
+    <div class="type" id="type"></div>
+    <button class="button" onclick="talk()">話しかける</button>
+    <div class="message" id="message"></div>
+  </div>
+  <button class="button" onclick="nextCharacter()">次のイケメン</button>
+</div>
 
 <script>
-const boardEl = document.getElementById("board");
-const infoEl = document.getElementById("info");
+const characters = [
+  {
+    name:"蓮",
+    face:"塩顔",
+    personality:"ツンデレ",
+    lines:[
+      "べ、別に君のためじゃないけど…気づいたら目で追ってた",
+      "今日は…その…可愛いんじゃない？別に特別じゃないけど",
+      "俺に構ってほしいなら、もう少し近くに来れば？"
+    ]
+  },
+  {
+    name:"悠真",
+    face:"しょうゆ顔",
+    personality:"デレデレ",
+    lines:[
+      "ねえ、今日もめっちゃ可愛いね。ずっと見てたい",
+      "君と話すだけで一日が最高になるんだけど",
+      "こんなにドキドキするの、君のせいだよ"
+    ]
+  },
+  {
+    name:"蒼",
+    face:"塩顔",
+    personality:"クール",
+    lines:[
+      "…君って不思議だね。目が離せない",
+      "静かな時間、君となら悪くない",
+      "近くにいると落ち着く。理由はわからないけど"
+    ]
+  },
+  {
+    name:"颯",
+    face:"ソース顔",
+    personality:"情熱系",
+    lines:[
+      "会えた瞬間、心臓が跳ねた。君のせいだ",
+      "こんなに惹かれるなんて思わなかった",
+      "もう遠慮しない。君のこと、もっと知りたい"
+    ]
+  },
+  {
+    name:"湊",
+    face:"しょうゆ顔",
+    personality:"癒し系",
+    lines:[
+      "無理しなくていいよ。君はそのままで可愛い",
+      "一緒にいると、すごく安心するんだ",
+      "今日も頑張ってるね。ちゃんと見てるよ"
+    ]
+  }
+];
 
-let board = Array(8).fill().map(()=>Array(8).fill(null));
-let turn = "black";
+let current = 0;
 
-// キャラクター設定
-function createPiece(color, level=1) {
-  return {
-    color,
-    level,
-    char: color === "black" ? "🐺" : "🦊"
-  };
+function render(){
+  const c = characters[current];
+  document.getElementById("name").textContent = c.name;
+  document.getElementById("type").textContent = c.face + " × " + c.personality;
+  document.getElementById("message").textContent = "";
 }
 
-// 初期配置
-board[3][3] = createPiece("white");
-board[3][4] = createPiece("black");
-board[4][3] = createPiece("black");
-board[4][4] = createPiece("white");
-
-function render() {
-  boardEl.innerHTML = "";
-  board.forEach((row,y)=>{
-    row.forEach((cell,x)=>{
-      const div = document.createElement("div");
-      div.className = "cell";
-      if(cell){
-        div.classList.add(cell.color);
-        div.textContent = cell.char + cell.level;
-      }
-      div.onclick = ()=>place(x,y);
-      boardEl.appendChild(div);
-    });
-  });
-  infoEl.textContent = "ターン: " + turn;
+function talk(){
+  const c = characters[current];
+  const line = c.lines[Math.floor(Math.random()*c.lines.length)];
+  document.getElementById("message").textContent = line;
 }
 
-function inBounds(x,y){ return x>=0 && x<8 && y>=0 && y<8; }
-
-const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-
-function place(x,y){
-  if(board[y][x]) return;
-  let flipped = [];
-
-  dirs.forEach(([dx,dy])=>{
-    let nx=x+dx, ny=y+dy;
-    let temp=[];
-    while(inBounds(nx,ny) && board[ny][nx] && board[ny][nx].color !== turn){
-      temp.push([nx,ny]);
-      nx+=dx; ny+=dy;
-    }
-    if(inBounds(nx,ny) && board[ny][nx] && board[ny][nx].color===turn){
-      flipped = flipped.concat(temp);
-    }
-  });
-
-  if(flipped.length===0) return;
-
-  // 新しい駒
-  let newPiece = createPiece(turn);
-
-  // コンボ：多くひっくり返すほどレベルUP
-  if(flipped.length >= 3) newPiece.level++;
-  if(flipped.length >= 6) newPiece.level++;
-
-  board[y][x] = newPiece;
-
-  flipped.forEach(([fx,fy])=>{
-    board[fy][fx].color = turn;
-    board[fy][fx].char = turn === "black" ? "🐺" : "🦊";
-    
-    // スキル：レベル2以上なら周囲も変換
-    if(newPiece.level >= 2){
-      dirs.forEach(([dx,dy])=>{
-        let ax=fx+dx, ay=fy+dy;
-        if(inBounds(ax,ay) && board[ay][ax]){
-          board[ay][ax].color = turn;
-          board[ay][ax].char = turn === "black" ? "🐺" : "🦊";
-        }
-      });
-    }
-  });
-
-  turn = turn === "black" ? "white" : "black";
+function nextCharacter(){
+  current = (current + 1) % characters.length;
   render();
 }
 
