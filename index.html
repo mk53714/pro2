@@ -2,103 +2,110 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>モテモテ恋愛アプリ</title>
+<title>進化版モテモテ恋愛アプリ</title>
 <style>
-body{font-family:sans-serif;background:linear-gradient(135deg,#ffe0f0,#e0f7ff);text-align:center;margin:0;padding:0;}
+body{font-family:sans-serif;background:linear-gradient(135deg,#ffe0f0,#e0f7ff);text-align:center;margin:0;padding:0;overflow-x:hidden;}
 h1{margin:20px;color:#ff4fa3;}
-#container{max-width:600px;margin:0 auto;padding:20px;}
-.card{background:white;border-radius:20px;padding:20px;margin:20px 0;box-shadow:0 10px 20px rgba(0,0,0,0.1);}
-.character{font-size:22px;margin-bottom:10px;}
+#container{max-width:700px;margin:0 auto;padding:20px;}
+.card{background:white;border-radius:20px;padding:20px;margin:20px 0;box-shadow:0 10px 20px rgba(0,0,0,0.1);position:relative;}
+.character{font-size:22px;margin-bottom:5px;}
 .type{font-size:14px;color:#666;margin-bottom:10px;}
-.button{padding:10px 20px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;margin-top:10px;}
+.face{font-size:80px;animation:float 2s infinite ease-in-out;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.button{padding:10px 20px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;margin:5px;}
 .button:hover{background:#ff2f90;}
-.message{margin-top:15px;font-size:16px;color:#333;}
+.message{margin-top:15px;font-size:16px;color:#333;min-height:40px;}
+.choices button{background:#6c63ff;}
+.gauge{height:20px;background:#ddd;border-radius:10px;margin-top:10px;overflow:hidden;}
+.gauge-inner{height:100%;background:#ff4fa3;width:0%;transition:0.3s;}
 </style>
 </head>
 <body>
-<h1>モテモテ恋愛シミュレーション</h1>
+<h1>モテモテ恋愛シミュレーション✨</h1>
 <div id="container">
   <div class="card">
+    <div class="face" id="face"></div>
     <div class="character" id="name"></div>
     <div class="type" id="type"></div>
-    <button class="button" onclick="talk()">話しかける</button>
+    <div class="gauge"><div class="gauge-inner" id="gauge"></div></div>
     <div class="message" id="message"></div>
+    <div class="choices" id="choices"></div>
   </div>
   <button class="button" onclick="nextCharacter()">次のイケメン</button>
 </div>
 
 <script>
-const characters = [
-  {
-    name:"蓮",
-    face:"塩顔",
-    personality:"ツンデレ",
-    lines:[
-      "べ、別に君のためじゃないけど…気づいたら目で追ってた",
-      "今日は…その…可愛いんじゃない？別に特別じゃないけど",
-      "俺に構ってほしいなら、もう少し近くに来れば？"
-    ]
-  },
-  {
-    name:"悠真",
-    face:"しょうゆ顔",
-    personality:"デレデレ",
-    lines:[
-      "ねえ、今日もめっちゃ可愛いね。ずっと見てたい",
-      "君と話すだけで一日が最高になるんだけど",
-      "こんなにドキドキするの、君のせいだよ"
-    ]
-  },
-  {
-    name:"蒼",
-    face:"塩顔",
-    personality:"クール",
-    lines:[
-      "…君って不思議だね。目が離せない",
-      "静かな時間、君となら悪くない",
-      "近くにいると落ち着く。理由はわからないけど"
-    ]
-  },
-  {
-    name:"颯",
-    face:"ソース顔",
-    personality:"情熱系",
-    lines:[
-      "会えた瞬間、心臓が跳ねた。君のせいだ",
-      "こんなに惹かれるなんて思わなかった",
-      "もう遠慮しない。君のこと、もっと知りたい"
-    ]
-  },
-  {
-    name:"湊",
-    face:"しょうゆ顔",
-    personality:"癒し系",
-    lines:[
-      "無理しなくていいよ。君はそのままで可愛い",
-      "一緒にいると、すごく安心するんだ",
-      "今日も頑張ってるね。ちゃんと見てるよ"
-    ]
-  }
+const characters=[
+{name:"蓮",face:"😎",type:"塩顔×ツンデレ",like:0,
+ lines:["別に…嫌いじゃない","その笑顔、反則だろ"],
+ choices:[
+ {text:"からかう",effect:5,response:"うるさい…でも嫌じゃない"},
+ {text:"褒める",effect:10,response:"…調子狂う"}
+ ]},
+{name:"悠真",face:"😊",type:"しょうゆ顔×デレデレ",like:0,
+ lines:["今日も可愛いね","ずっと一緒にいたい"],
+ choices:[
+ {text:"照れる",effect:10,response:"その反応好き！"},
+ {text:"甘える",effect:15,response:"もっと頼ってよ"}
+ ]},
+{name:"蒼",face:"🖤",type:"塩顔×クール",like:0,
+ lines:["…悪くない","君、面白いね"],
+ choices:[
+ {text:"静かに話す",effect:10,response:"落ち着く"},
+ {text:"笑う",effect:5,response:"…いい顔するね"}
+ ]},
+{name:"颯",face:"🔥",type:"ソース顔×情熱",like:0,
+ lines:["君しか見えない","本気で惚れてる"],
+ choices:[
+ {text:"見つめる",effect:15,response:"その目、ずるい"},
+ {text:"距離を近づける",effect:20,response:"もう我慢しない"}
+ ]},
+{name:"湊",face:"🌿",type:"しょうゆ顔×癒し",like:0,
+ lines:["無理しないで","君は十分素敵"],
+ choices:[
+ {text:"頼る",effect:15,response:"守りたくなる"},
+ {text:"笑顔",effect:10,response:"その笑顔好き"}
+ ]},
+{name:"玲",face:"🧊",type:"塩顔×ドS",like:0,
+ lines:["そんな顔するんだ","もっと見せて"],
+ choices:[
+ {text:"反抗",effect:10,response:"いいね、その感じ"},
+ {text:"従う",effect:15,response:"素直だな"}
+ ]}
 ];
 
-let current = 0;
+let current=0;
 
 function render(){
-  const c = characters[current];
-  document.getElementById("name").textContent = c.name;
-  document.getElementById("type").textContent = c.face + " × " + c.personality;
-  document.getElementById("message").textContent = "";
+ let c=characters[current];
+ document.getElementById("name").textContent=c.name;
+ document.getElementById("type").textContent=c.type;
+ document.getElementById("face").textContent=c.face;
+ document.getElementById("gauge").style.width=c.like+"%";
+ document.getElementById("message").textContent=c.lines[Math.floor(Math.random()*c.lines.length)];
+ 
+ let choicesDiv=document.getElementById("choices");
+ choicesDiv.innerHTML="";
+ c.choices.forEach(choice=>{
+   let btn=document.createElement("button");
+   btn.textContent=choice.text;
+   btn.className="button";
+   btn.onclick=()=>select(choice);
+   choicesDiv.appendChild(btn);
+ });
 }
 
-function talk(){
-  const c = characters[current];
-  const line = c.lines[Math.floor(Math.random()*c.lines.length)];
-  document.getElementById("message").textContent = line;
+function select(choice){
+ let c=characters[current];
+ c.like+=choice.effect;
+ if(c.like>100) c.like=100;
+ document.getElementById("message").textContent=choice.response;
+ document.getElementById("gauge").style.width=c.like+"%";
 }
 
 function nextCharacter(){
-  current = (current + 1) % characters.length;
-  render();
+ current=(current+1)%characters.length;
+ render();
 }
 
 render();
