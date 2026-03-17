@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ガチ恋チャット</title>
+<title>ガチ恋チャット 完全版</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#ffd6ec;}
 #app{max-width:520px;margin:0 auto;height:100vh;background:white;display:flex;flex-direction:column;}
-.header{background:#ff4fa3;color:white;padding:10px;display:flex;align-items:center;gap:10px;}
+.header{background:#ff4fa3;color:white;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;}
 .face{width:50px;height:50px;border-radius:50%;overflow:hidden;}
 .face img{width:100%;height:100%;object-fit:cover;}
 .chat{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
@@ -17,12 +17,16 @@ body{margin:0;font-family:sans-serif;background:#ffd6ec;}
 .input-area{display:flex;padding:10px;border-top:1px solid #ccc;}
 input{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc;}
 button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;}
-.gauge{height:6px;background:#ddd;margin-top:4px;}
+.gauge{height:10px;background:#ddd;margin-top:4px;border-radius:5px;overflow:hidden;}
 .gauge-inner{height:100%;background:#ff4fa3;width:50%;transition:0.3s;}
+.like-text{font-size:12px;}
+#profile{display:none;position:absolute;inset:0;background:white;justify-content:center;align-items:center;flex-direction:column;}
+#profile img{width:200px;border-radius:20px;}
 #start{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;}
 </style>
 </head>
 <body>
+
 <div id="start">
 <h2>誰と話す？</h2>
 <select id="charSel"></select>
@@ -35,10 +39,11 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 </div>
 
 <div id="app" style="display:none">
-<div class="header">
+<div class="header" onclick="openProfile()">
 <div class="face"><img id="face"></div>
 <div>
 <div id="name"></div>
+<div class="like-text" id="likeText"></div>
 <div class="gauge"><div class="gauge-inner" id="gauge"></div></div>
 </div>
 </div>
@@ -49,20 +54,19 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 </div>
 </div>
 
+<div id="profile">
+<img id="profileImg">
+<h2 id="profileName"></h2>
+<button onclick="closeProfile()">戻る</button>
+</div>
+
 <script>
 const characters=[
-{name:"蓮",img:"https://i.imgur.com/8Km9tLL.png",type:"ツンデレ",pref:"クール",like:50},
+{name:"蓮",img:"https://i.imgur.com/8Km9tLL.png",type:"ツンデレ",pref:"ツン",like:50},
 {name:"悠真",img:"https://i.imgur.com/5cX1Z6B.png",type:"デレデレ",pref:"甘え",like:50},
 {name:"蒼",img:"https://i.imgur.com/J8QZ6Qp.png",type:"クール",pref:"静か",like:50},
 {name:"玲",img:"https://i.imgur.com/9Xn4K7D.png",type:"ドS",pref:"強気",like:50}
 ];
-
-const replies={
-ツンデレ:["別に嬉しくないけど…","お前、調子いいな","まあ嫌いじゃない"],
-デレデレ:["可愛すぎるって","もっと話そ！","大好きなんだけど"],
-クール:["いいね","悪くない","落ち着く"],
-ドS:["いい反応","もっと見せて","からかいたくなる"]
-};
 
 let c,relation;
 
@@ -78,58 +82,79 @@ function start(){
  botMsg("来てくれたんだ");
 }
 
-function now(){
- let d=new Date();
- return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);
-}
+function now(){let d=new Date();return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);} 
 
 function addMsg(text,cls){
  let div=document.createElement("div");
  div.className="msg "+cls;
  div.innerHTML=text+`<div class='meta'>${now()} ✔✔</div>`;
- document.getElementById("chat").appendChild(div);
- document.getElementById("chat").scrollTop=9999;
+ chat.appendChild(div);
+ chat.scrollTop=9999;
 }
 
-function botMsg(text){
- setTimeout(()=>addMsg(text,"bot"),800);
-}
+function botMsg(text){setTimeout(()=>addMsg(text,"bot"),800);} 
 
 function send(){
- let val=document.getElementById("input").value;
+ let val=input.value;
  if(!val) return;
  addMsg(val,"user");
- document.getElementById("input").value="";
+ input.value="";
 
- // 好感度変動
  let delta=0;
- if(val.includes("好き")||val.includes("可愛い")) delta+= (c.pref==="甘え"?15:5);
- if(val.includes("笑")||val.includes("楽")) delta+= (c.pref==="クール"?5:10);
- if(val.includes("命令")||val.includes("来て")) delta+= (c.pref==="強気"?15:-5);
- if(val.length<3) delta-=5;
+ let reply="";
+
+ // 好感度ロジック（かなりわかりやすく）
+ if(val.includes("好き")||val.includes("会いたい")){
+   if(c.pref==="甘え") delta+=20; else delta+=5;
+   reply="そんなこと言われたら嬉しい";
+ }
+ else if(val.includes("かわいい")||val.includes("かっこいい")){
+   delta+=10;
+   reply="…もっと言って";
+ }
+ else if(val.includes("命令")||val.includes("来て")){
+   if(c.pref==="強気") delta+=15; else delta-=10;
+   reply="その言い方、嫌いじゃない";
+ }
+ else if(val.length<3){
+   delta-=10;
+   reply="ちゃんと話して";
+ }
+ else{
+   delta+= (c.pref==="静か"?10:3);
+   reply="うん、いいね";
+ }
 
  c.like+=delta;
  if(c.like>100)c.like=100;
  if(c.like<0)c.like=0;
  updateGauge();
 
- let rep=replies[c.type][Math.floor(Math.random()*3)];
- if(c.like>80) rep+="…好き";
- if(c.like<20) rep="ちょっと距離置こ";
- botMsg(rep);
+ // 好感度で口調変化
+ if(c.like>80) reply+="…好き";
+ if(c.like<20) reply="ちょっと距離置く";
+
+ botMsg(reply);
 }
 
 function updateGauge(){
- document.getElementById("gauge").style.width=c.like+"%";
+ gauge.style.width=c.like+"%";
+ likeText.textContent="好感度："+c.like+"%";
 }
 
-// 初期セレクト生成
-let sel=document.getElementById("charSel");
+function openProfile(){
+ profile.style.display="flex";
+ profileImg.src=c.img;
+ profileName.textContent=c.name;
+}
+function closeProfile(){profile.style.display="none";}
+
+// 初期
 characters.forEach((ch,i)=>{
  let opt=document.createElement("option");
  opt.value=i;
  opt.textContent=ch.name+"（"+ch.type+"）";
- sel.appendChild(opt);
+ charSel.appendChild(opt);
 });
 </script>
 </body>
