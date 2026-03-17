@@ -2,13 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ガチ恋チャット 完全版</title>
+<title>ガチ恋AIチャット最終版</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#ffd6ec;}
-#app{max-width:520px;margin:0 auto;height:100vh;background:white;display:flex;flex-direction:column;}
-.header{background:#ff4fa3;color:white;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;}
-.face{width:50px;height:50px;border-radius:50%;overflow:hidden;}
-.face img{width:100%;height:100%;object-fit:cover;}
+#app{max-width:900px;margin:0 auto;height:100vh;display:flex;background:white;}
+.left{width:40%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;}
+.left img{width:90%;border-radius:20px;transition:0.3s;}
+.right{width:60%;display:flex;flex-direction:column;}
+.header{background:#ff4fa3;color:white;padding:10px;}
 .chat{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
 .msg{margin:6px 0;padding:10px;border-radius:15px;max-width:70%;}
 .bot{background:#fff;border:1px solid #ddd;}
@@ -16,71 +17,43 @@ body{margin:0;font-family:sans-serif;background:#ffd6ec;}
 .meta{font-size:10px;color:#666;margin-top:2px;}
 .input-area{display:flex;padding:10px;border-top:1px solid #ccc;}
 input{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc;}
-button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;}
-.gauge{height:10px;background:#ddd;margin-top:4px;border-radius:5px;overflow:hidden;}
+button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;}
+.gauge{height:10px;background:#ddd;}
 .gauge-inner{height:100%;background:#ff4fa3;width:50%;transition:0.3s;}
-.like-text{font-size:12px;}
-#profile{display:none;position:absolute;inset:0;background:white;justify-content:center;align-items:center;flex-direction:column;}
-#profile img{width:200px;border-radius:20px;}
-#start{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;}
 </style>
 </head>
 <body>
+<div id="app">
 
-<div id="start">
-<h2>誰と話す？</h2>
-<select id="charSel"></select>
-<select id="relation">
-<option>片思い</option>
-<option>両思い（未交際）</option>
-<option>付き合っている</option>
-</select>
-<button onclick="start()">スタート</button>
+<div class="left">
+<img id="face" src="https://i.imgur.com/8Km9tLL.png">
 </div>
 
-<div id="app" style="display:none">
-<div class="header" onclick="openProfile()">
-<div class="face"><img id="face"></div>
-<div>
-<div id="name"></div>
-<div class="like-text" id="likeText"></div>
-<div class="gauge"><div class="gauge-inner" id="gauge"></div></div>
+<div class="right">
+<div class="header">
+<span id="name">蓮</span>
+<div class="gauge"><div id="gauge" class="gauge-inner"></div></div>
 </div>
-</div>
+
 <div class="chat" id="chat"></div>
+
 <div class="input-area">
 <input id="input" placeholder="メッセージ">
 <button onclick="send()">送信</button>
 </div>
 </div>
 
-<div id="profile">
-<img id="profileImg">
-<h2 id="profileName"></h2>
-<button onclick="closeProfile()">戻る</button>
 </div>
 
 <script>
-const characters=[
-{name:"蓮",img:"https://i.imgur.com/8Km9tLL.png",type:"ツンデレ",pref:"ツン",like:50},
-{name:"悠真",img:"https://i.imgur.com/5cX1Z6B.png",type:"デレデレ",pref:"甘え",like:50},
-{name:"蒼",img:"https://i.imgur.com/J8QZ6Qp.png",type:"クール",pref:"静か",like:50},
-{name:"玲",img:"https://i.imgur.com/9Xn4K7D.png",type:"ドS",pref:"強気",like:50}
-];
+let like=50;
+let memory=[];
 
-let c,relation;
-
-function start(){
- let idx=document.getElementById("charSel").value;
- c=JSON.parse(JSON.stringify(characters[idx]));
- relation=document.getElementById("relation").value;
- document.getElementById("start").style.display="none";
- document.getElementById("app").style.display="flex";
- document.getElementById("name").textContent=c.name+"（"+relation+"）";
- document.getElementById("face").src=c.img;
- updateGauge();
- botMsg("来てくれたんだ");
-}
+const faces={
+normal:"https://i.imgur.com/8Km9tLL.png",
+happy:"https://i.imgur.com/5cX1Z6B.png",
+shy:"https://i.imgur.com/J8QZ6Qp.png"
+};
 
 function now(){let d=new Date();return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);} 
 
@@ -92,7 +65,56 @@ function addMsg(text,cls){
  chat.scrollTop=9999;
 }
 
-function botMsg(text){setTimeout(()=>addMsg(text,"bot"),800);} 
+function thinkReply(input){
+ let reply="";
+ let delta=0;
+
+ // 記憶
+ memory.push(input);
+
+ if(input.includes("好き")){
+   delta=20;
+   reply="…急にそういうこと言うの反則";
+ }
+ else if(input.includes("会いたい")){
+   delta=15;
+   reply="俺も会いたいって思ってた";
+ }
+ else if(input.includes("何してる")){
+   delta=5;
+   reply="今は君のこと考えてた";
+ }
+ else if(input.length<3){
+   delta=-10;
+   reply="ちゃんと話してよ";
+ }
+ else{
+   delta=5;
+   reply="それいいね、もっと聞かせて";
+ }
+
+ like+=delta;
+ if(like>100)like=100;
+ if(like<0)like=0;
+
+ // 距離感変化
+ if(like>80) reply+="…好きだよ";
+ if(like>90) reply+=" もっと一緒にいたい";
+ if(like<20) reply="少し距離置こう";
+
+ // たまに質問
+ if(Math.random()<0.3){
+   reply+=" ねえ、君はどう思う？";
+ }
+
+ return {reply,delta};
+}
+
+function updateFace(delta){
+ if(delta>10) face.src=faces.happy;
+ else if(delta>0) face.src=faces.shy;
+ else face.src=faces.normal;
+}
 
 function send(){
  let val=input.value;
@@ -100,62 +122,16 @@ function send(){
  addMsg(val,"user");
  input.value="";
 
- let delta=0;
- let reply="";
+ let res=thinkReply(val);
+ document.getElementById("gauge").style.width=like+"%";
+ updateFace(res.delta);
 
- // 好感度ロジック（かなりわかりやすく）
- if(val.includes("好き")||val.includes("会いたい")){
-   if(c.pref==="甘え") delta+=20; else delta+=5;
-   reply="そんなこと言われたら嬉しい";
- }
- else if(val.includes("かわいい")||val.includes("かっこいい")){
-   delta+=10;
-   reply="…もっと言って";
- }
- else if(val.includes("命令")||val.includes("来て")){
-   if(c.pref==="強気") delta+=15; else delta-=10;
-   reply="その言い方、嫌いじゃない";
- }
- else if(val.length<3){
-   delta-=10;
-   reply="ちゃんと話して";
- }
- else{
-   delta+= (c.pref==="静か"?10:3);
-   reply="うん、いいね";
- }
-
- c.like+=delta;
- if(c.like>100)c.like=100;
- if(c.like<0)c.like=0;
- updateGauge();
-
- // 好感度で口調変化
- if(c.like>80) reply+="…好き";
- if(c.like<20) reply="ちょっと距離置く";
-
- botMsg(reply);
+ setTimeout(()=>addMsg(res.reply,"bot"),800);
 }
-
-function updateGauge(){
- gauge.style.width=c.like+"%";
- likeText.textContent="好感度："+c.like+"%";
-}
-
-function openProfile(){
- profile.style.display="flex";
- profileImg.src=c.img;
- profileName.textContent=c.name;
-}
-function closeProfile(){profile.style.display="none";}
 
 // 初期
-characters.forEach((ch,i)=>{
- let opt=document.createElement("option");
- opt.value=i;
- opt.textContent=ch.name+"（"+ch.type+"）";
- charSel.appendChild(opt);
-});
+addMsg("来てくれてありがと","bot");
+document.getElementById("gauge").style.width=like+"%";
 </script>
 </body>
 </html>
