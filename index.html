@@ -2,12 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ガチ恋AIチャット最終版</title>
+<title>ガチ恋AIチャット最終進化</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#ffd6ec;}
-#app{max-width:900px;margin:0 auto;height:100vh;display:flex;background:white;}
-.left{width:40%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;}
-.left img{width:90%;border-radius:20px;transition:0.3s;}
+#start{position:absolute;inset:0;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+#app{max-width:900px;margin:0 auto;height:100vh;display:none;background:white;}
+.main{display:flex;height:100%;}
+.left{width:40%;background:#000;display:flex;align-items:center;justify-content:center;}
+.left img{width:90%;border-radius:20px;}
 .right{width:60%;display:flex;flex-direction:column;}
 .header{background:#ff4fa3;color:white;padding:10px;}
 .chat{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
@@ -17,21 +19,44 @@ body{margin:0;font-family:sans-serif;background:#ffd6ec;}
 .meta{font-size:10px;color:#666;margin-top:2px;}
 .input-area{display:flex;padding:10px;border-top:1px solid #ccc;}
 input{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc;}
-button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;}
+button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;}
 .gauge{height:10px;background:#ddd;}
 .gauge-inner{height:100%;background:#ff4fa3;width:50%;transition:0.3s;}
 </style>
 </head>
 <body>
+
+<div id="start">
+<h2>性格を選択</h2>
+<select id="personality">
+<option>ツンツン</option>
+<option>ツンデレ</option>
+<option>デレデレ</option>
+<option>ドS</option>
+<option>ドM</option>
+</select>
+
+<h2>関係性</h2>
+<select id="relation">
+<option>友達</option>
+<option>片思い</option>
+<option>両思い</option>
+<option>交際中</option>
+</select>
+
+<button onclick="start()">スタート</button>
+</div>
+
 <div id="app">
+<div class="main">
 
 <div class="left">
-<img id="face" src="https://i.imgur.com/8Km9tLL.png">
+<img id="face" src="https://images.unsplash.com/photo-1603415526960-f7e0328b0a32">
 </div>
 
 <div class="right">
 <div class="header">
-<span id="name">蓮</span>
+蓮（18・高校生）
 <div class="gauge"><div id="gauge" class="gauge-inner"></div></div>
 </div>
 
@@ -41,19 +66,23 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 <input id="input" placeholder="メッセージ">
 <button onclick="send()">送信</button>
 </div>
-</div>
 
+</div>
+</div>
 </div>
 
 <script>
 let like=50;
+let personality,relation;
 let memory=[];
 
-const faces={
-normal:"https://i.imgur.com/8Km9tLL.png",
-happy:"https://i.imgur.com/5cX1Z6B.png",
-shy:"https://i.imgur.com/J8QZ6Qp.png"
-};
+function start(){
+ personality=document.getElementById("personality").value;
+ relation=document.getElementById("relation").value;
+ document.getElementById("start").style.display="none";
+ document.getElementById("app").style.display="block";
+ botMsg("来たんだ。"+relation+"だし、まあ話すけど");
+}
 
 function now(){let d=new Date();return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);} 
 
@@ -65,73 +94,83 @@ function addMsg(text,cls){
  chat.scrollTop=9999;
 }
 
-function thinkReply(input){
- let reply="";
- let delta=0;
+function botMsg(text){setTimeout(()=>addMsg(text,"bot"),700);} 
 
- // 記憶
+function generateReply(input){
  memory.push(input);
+ let delta=0;
+ let reply="";
 
- if(input.includes("好き")){
-   delta=20;
-   reply="…急にそういうこと言うの反則";
+ // 内容理解
+ let positive=input.includes("好き")||input.includes("会いたい");
+ let joke=input.includes("笑")||input.includes("w");
+ let short=input.length<3;
+
+ // 性格ごとの反応
+ if(personality==="ツンツン"){
+   if(positive){delta=5; reply="…そういうの軽く言うな";}
+   else if(joke){delta=3; reply="つまらなくはない";}
+   else{delta=0; reply="ふーん";}
  }
- else if(input.includes("会いたい")){
-   delta=15;
-   reply="俺も会いたいって思ってた";
+
+ if(personality==="ツンデレ"){
+   if(positive){delta=15; reply="…別に嬉しくないけど";}
+   else if(joke){delta=8; reply="ちょっと面白い";}
+   else{delta=5; reply="まあいいんじゃない";}
  }
- else if(input.includes("何してる")){
-   delta=5;
-   reply="今は君のこと考えてた";
+
+ if(personality==="デレデレ"){
+   if(positive){delta=20; reply="めっちゃ嬉しい！";}
+   else{delta=10; reply="もっと話そ！";}
  }
- else if(input.length<3){
-   delta=-10;
-   reply="ちゃんと話してよ";
+
+ if(personality==="ドS"){
+   if(positive){delta=10; reply="そういう顔するんだ";}
+   else{delta=5; reply="からかいたくなる";}
  }
- else{
-   delta=5;
-   reply="それいいね、もっと聞かせて";
+
+ if(personality==="ドM"){
+   if(positive){delta=15; reply="もっと言って…";}
+   else{delta=8; reply="いじられるの嫌いじゃない";}
  }
+
+ if(short){delta-=10; reply="ちゃんと話せよ";}
 
  like+=delta;
  if(like>100)like=100;
  if(like<0)like=0;
 
- // 距離感変化
+ // 距離感
  if(like>80) reply+="…好きだよ";
  if(like>90) reply+=" もっと一緒にいたい";
- if(like<20) reply="少し距離置こう";
+ if(like<20) reply="ちょっと距離置く";
 
- // たまに質問
- if(Math.random()<0.3){
-   reply+=" ねえ、君はどう思う？";
- }
+ // 質問
+ if(Math.random()<0.3){reply+=" 今日は何してた？";}
 
  return {reply,delta};
 }
 
 function updateFace(delta){
- if(delta>10) face.src=faces.happy;
- else if(delta>0) face.src=faces.shy;
- else face.src=faces.normal;
+ if(delta>10) face.style.filter="brightness(1.2)";
+ else if(delta>0) face.style.filter="brightness(1.05)";
+ else face.style.filter="brightness(0.9)";
 }
 
 function send(){
  let val=input.value;
- if(!val) return;
+ if(!val)return;
  addMsg(val,"user");
  input.value="";
 
- let res=thinkReply(val);
- document.getElementById("gauge").style.width=like+"%";
+ let res=generateReply(val);
  updateFace(res.delta);
+ document.getElementById("gauge").style.width=like+"%";
 
- setTimeout(()=>addMsg(res.reply,"bot"),800);
+ setTimeout(()=>addMsg(res.reply,"bot"),700);
 }
 
-// 初期
-addMsg("来てくれてありがと","bot");
-document.getElementById("gauge").style.width=like+"%";
+botMsg("…来ると思ってた");
 </script>
 </body>
 </html>
