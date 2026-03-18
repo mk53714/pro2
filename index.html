@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ガチ恋AIチャット最終進化</title>
+<title>ガチ恋AIチャット 完全体</title>
 <style>
 body{margin:0;font-family:sans-serif;background:#ffd6ec;}
 #start{position:absolute;inset:0;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
@@ -27,7 +27,10 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 <body>
 
 <div id="start">
-<h2>性格を選択</h2>
+<h2>あなたの名前</h2>
+<input id="username" placeholder="名前を入力">
+
+<h2>性格</h2>
 <select id="personality">
 <option>ツンツン</option>
 <option>ツンデレ</option>
@@ -51,12 +54,12 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 <div class="main">
 
 <div class="left">
-<img id="face" src="https://images.unsplash.com/photo-1603415526960-f7e0328b0a32">
+<img src="https://images.unsplash.com/photo-1603415526960-f7e0328b0a32">
 </div>
 
 <div class="right">
 <div class="header">
-蓮（18・高校生）
+<span id="title"></span>
 <div class="gauge"><div id="gauge" class="gauge-inner"></div></div>
 </div>
 
@@ -73,104 +76,91 @@ button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#f
 
 <script>
 let like=50;
-let personality,relation;
+let personality,relation,username;
 let memory=[];
 
 function start(){
+ username=document.getElementById("username").value||"君";
  personality=document.getElementById("personality").value;
  relation=document.getElementById("relation").value;
  document.getElementById("start").style.display="none";
  document.getElementById("app").style.display="block";
- botMsg("来たんだ。"+relation+"だし、まあ話すけど");
+ document.getElementById("title").textContent="蓮（18）×"+relation;
+ botMsg("…来たんだ、"+username);
 }
 
 function now(){let d=new Date();return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);} 
 
-function addMsg(text,cls){
+function addMsg(text,cls,read=false){
  let div=document.createElement("div");
  div.className="msg "+cls;
- div.innerHTML=text+`<div class='meta'>${now()} ✔✔</div>`;
+ div.innerHTML=text+`<div class='meta'>${now()} ${read?"✔✔":""}</div>`;
  chat.appendChild(div);
  chat.scrollTop=9999;
+ return div;
 }
 
-function botMsg(text){setTimeout(()=>addMsg(text,"bot"),700);} 
+function botMsg(text){
+ setTimeout(()=>addMsg(text,"bot",true),700);
+}
 
 function generateReply(input){
  memory.push(input);
  let delta=0;
  let reply="";
 
- // 内容理解
- let positive=input.includes("好き")||input.includes("会いたい");
- let joke=input.includes("笑")||input.includes("w");
- let short=input.length<3;
-
- // 性格ごとの反応
- if(personality==="ツンツン"){
-   if(positive){delta=5; reply="…そういうの軽く言うな";}
-   else if(joke){delta=3; reply="つまらなくはない";}
-   else{delta=0; reply="ふーん";}
+ // 嫉妬イベント
+ if(input.includes("他の男")||input.includes("別の人")){
+   delta=-10;
+   reply=username+"さ、そういう話やめろ";
  }
 
- if(personality==="ツンデレ"){
-   if(positive){delta=15; reply="…別に嬉しくないけど";}
-   else if(joke){delta=8; reply="ちょっと面白い";}
-   else{delta=5; reply="まあいいんじゃない";}
+ else if(input.includes("好き")){
+   delta=15;
+   reply=username+"…そういうのずるい";
  }
 
- if(personality==="デレデレ"){
-   if(positive){delta=20; reply="めっちゃ嬉しい！";}
-   else{delta=10; reply="もっと話そ！";}
+ else if(input.includes("会いたい")){
+   delta=10;
+   reply="俺も、"+username+"に会いたい";
  }
 
- if(personality==="ドS"){
-   if(positive){delta=10; reply="そういう顔するんだ";}
-   else{delta=5; reply="からかいたくなる";}
+ else{
+   delta=5;
+   reply="そうなんだ、"+username+"らしいね";
  }
-
- if(personality==="ドM"){
-   if(positive){delta=15; reply="もっと言って…";}
-   else{delta=8; reply="いじられるの嫌いじゃない";}
- }
-
- if(short){delta-=10; reply="ちゃんと話せよ";}
 
  like+=delta;
  if(like>100)like=100;
  if(like<0)like=0;
 
- // 距離感
- if(like>80) reply+="…好きだよ";
- if(like>90) reply+=" もっと一緒にいたい";
- if(like<20) reply="ちょっと距離置く";
+ if(like>80) reply+=" …好きだよ";
+ if(like<20) reply="少し距離置こう";
 
- // 質問
- if(Math.random()<0.3){reply+=" 今日は何してた？";}
+ if(Math.random()<0.3){reply+=" ねえ今何してる？";}
 
  return {reply,delta};
-}
-
-function updateFace(delta){
- if(delta>10) face.style.filter="brightness(1.2)";
- else if(delta>0) face.style.filter="brightness(1.05)";
- else face.style.filter="brightness(0.9)";
 }
 
 function send(){
  let val=input.value;
  if(!val)return;
- addMsg(val,"user");
+ let userMsg=addMsg(val,"user",false);
  input.value="";
 
- let res=generateReply(val);
- updateFace(res.delta);
- document.getElementById("gauge").style.width=like+"%";
+ // 既読遅延
+ setTimeout(()=>{
+   userMsg.querySelector(".meta").innerHTML=now()+" ✔✔";
 
- setTimeout(()=>addMsg(res.reply,"bot"),700);
+   let res=generateReply(val);
+   document.getElementById("gauge").style.width=like+"%";
+   botMsg(res.reply);
+
+ },1000+Math.random()*1500);
 }
 
-botMsg("…来ると思ってた");
+botMsg("…待ってた");
+document.getElementById("gauge").style.width=like+"%";
 </script>
 </body>
 </html>
