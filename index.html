@@ -76,8 +76,8 @@ function start(){
  username=usernameInput.value||"君";
  personality=personalitySelect.value;
  relation=relationSelect.value;
- start.style.display="none";
- app.style.display="block";
+ document.getElementById("start").style.display="none";
+ document.getElementById("app").style.display="block";
  rel.textContent=relation;
  botMsg("…来たんだ、"+username);
 }
