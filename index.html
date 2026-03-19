@@ -2,165 +2,172 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ガチ恋AIチャット 完全体</title>
+<title>君とヒミツのトーク</title>
 <style>
-body{margin:0;font-family:sans-serif;background:#ffd6ec;}
+body{margin:0;font-family:sans-serif;transition:0.5s;}
 #start{position:absolute;inset:0;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
 #app{max-width:900px;margin:0 auto;height:100vh;display:none;background:white;}
 .main{display:flex;height:100%;}
-.left{width:40%;background:#000;display:flex;align-items:center;justify-content:center;}
+.left{width:40%;background:#111;display:flex;align-items:center;justify-content:center;}
 .left img{width:90%;border-radius:20px;}
 .right{width:60%;display:flex;flex-direction:column;}
-.header{background:#ff4fa3;color:white;padding:10px;}
-.chat{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;}
+.header{background:#ff4fa3;color:white;padding:10px;font-weight:bold;}
+.chat{flex:1;padding:10px;overflow-y:auto;background:#f5f5f5;transition:0.5s;}
 .msg{margin:6px 0;padding:10px;border-radius:15px;max-width:70%;}
 .bot{background:#fff;border:1px solid #ddd;}
 .user{background:#ff4fa3;color:white;margin-left:auto;}
 .meta{font-size:10px;color:#666;margin-top:2px;}
+.typing{font-size:12px;color:#888;margin:5px;}
 .input-area{display:flex;padding:10px;border-top:1px solid #ccc;}
 input{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc;}
-button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;cursor:pointer;}
-.gauge{height:10px;background:#ddd;}
+button{margin-left:5px;padding:10px;border:none;border-radius:20px;background:#ff4fa3;color:white;}
+.gauge{height:8px;background:#ddd;}
 .gauge-inner{height:100%;background:#ff4fa3;width:50%;transition:0.3s;}
 </style>
 </head>
 <body>
 
 <div id="start">
-<h2>あなたの名前</h2>
-<input id="username" placeholder="名前を入力">
-
-<h2>性格</h2>
+<h2>君とヒミツのトーク</h2>
+<input id="username" placeholder="名前">
 <select id="personality">
-<option>ツンツン</option>
 <option>ツンデレ</option>
 <option>デレデレ</option>
+<option>クール</option>
 <option>ドS</option>
-<option>ドM</option>
 </select>
-
-<h2>関係性</h2>
 <select id="relation">
 <option>友達</option>
 <option>片思い</option>
 <option>両思い</option>
 <option>交際中</option>
 </select>
-
 <button onclick="start()">スタート</button>
 </div>
 
 <div id="app">
 <div class="main">
-
 <div class="left">
-<img src="https://images.unsplash.com/photo-1603415526960-f7e0328b0a32">
+<img src="https://images.unsplash.com/photo-1547425260-76bcadfb4f2c">
 </div>
-
 <div class="right">
-<div class="header">
-<span id="title"></span>
+<div class="header">蓮 × <span id="rel"></span>
 <div class="gauge"><div id="gauge" class="gauge-inner"></div></div>
 </div>
-
 <div class="chat" id="chat"></div>
-
+<div class="typing" id="typing"></div>
 <div class="input-area">
-<input id="input" placeholder="メッセージ">
+<input id="input">
 <button onclick="send()">送信</button>
 </div>
-
 </div>
 </div>
 </div>
 
 <script>
 let like=50;
-let personality,relation,username;
+let username, personality, relation;
 let memory=[];
+let lastReply="";
+let turn=0;
+let emotion={shy:0,jealous:0,calm:50};
 
 function start(){
- username=document.getElementById("username").value||"君";
- personality=document.getElementById("personality").value;
- relation=document.getElementById("relation").value;
- document.getElementById("start").style.display="none";
- document.getElementById("app").style.display="block";
- document.getElementById("title").textContent="蓮（18）×"+relation;
+ username=usernameInput.value||"君";
+ personality=personalitySelect.value;
+ relation=relationSelect.value;
+ start.style.display="none";
+ app.style.display="block";
+ rel.textContent=relation;
  botMsg("…来たんだ、"+username);
 }
 
 function now(){let d=new Date();return d.getHours()+":"+("0"+d.getMinutes()).slice(-2);} 
 
-function addMsg(text,cls,read=false){
+function addMsg(text,cls,read=true){
  let div=document.createElement("div");
  div.className="msg "+cls;
  div.innerHTML=text+`<div class='meta'>${now()} ${read?"✔✔":""}</div>`;
  chat.appendChild(div);
  chat.scrollTop=9999;
- return div;
 }
 
-function botMsg(text){
- setTimeout(()=>addMsg(text,"bot",true),700);
+function typingEffect(cb){
+ typing.textContent="…入力中";
+ setTimeout(()=>{typing.textContent="";cb();},1000+Math.random()*1500);
+}
+
+function setEmotion(){
+ if(emotion.jealous>30) chat.style.background="#ffe0e0";
+ else if(emotion.shy>30) chat.style.background="#fff0f5";
+ else chat.style.background="#f5f5f5";
 }
 
 function generateReply(input){
  memory.push(input);
- let delta=0;
+ turn++;
+ let delta=5;
+ let reactionList=["…へえ","それ気になる","ちょっと意外","いいね","なんか好きかも"];
+ let questionList=["それっていつ？","どうしてそう思ったの？","他には？","きっかけは？","どんな感じだった？"];
+ let reaction=reactionList[Math.floor(Math.random()*reactionList.length)];
+ let question=questionList[Math.floor(Math.random()*questionList.length)];
  let reply="";
 
- // 嫉妬イベント
- if(input.includes("他の男")||input.includes("別の人")){
+ if(input.includes("他")||input.includes("男")){
+   emotion.jealous+=20;
    delta=-10;
-   reply=username+"さ、そういう話やめろ";
+   reply="…そいつの話、あんまり聞きたくない";
  }
-
  else if(input.includes("好き")){
+   emotion.shy+=20;
    delta=15;
-   reply=username+"…そういうのずるい";
+   reply="…そういうこと言うんだ";
  }
-
- else if(input.includes("会いたい")){
-   delta=10;
-   reply="俺も、"+username+"に会いたい";
- }
-
  else{
-   delta=5;
-   reply="そうなんだ、"+username+"らしいね";
+   reply=reaction+"、"+username+"っぽい";
  }
+
+ if(reply===lastReply) reply+="。てかさ";
+ lastReply=reply;
 
  like+=delta;
  if(like>100)like=100;
  if(like<0)like=0;
 
- if(like>80) reply+=" …好きだよ";
- if(like<20) reply="少し距離置こう";
+ if(turn%3===0) reply+=" …好き";
 
- if(Math.random()<0.3){reply+=" ねえ今何してる？";}
+ if(memory.length>3 && Math.random()<0.4){
+   reply+="。そういえば前に言ってたよね";
+ }
 
- return {reply,delta};
+ reply+="。"+question;
+
+ setEmotion();
+
+ return reply;
 }
 
 function send(){
  let val=input.value;
  if(!val)return;
- let userMsg=addMsg(val,"user",false);
+ addMsg(val,"user",false);
  input.value="";
 
- // 既読遅延
  setTimeout(()=>{
-   userMsg.querySelector(".meta").innerHTML=now()+" ✔✔";
-
-   let res=generateReply(val);
-   document.getElementById("gauge").style.width=like+"%";
-   botMsg(res.reply);
-
- },1000+Math.random()*1500);
+   let reply=generateReply(val);
+   typingEffect(()=>{
+     addMsg(reply,"bot",true);
+     gauge.style.width=like+"%";
+   });
+ },500);
 }
 
-botMsg("…待ってた");
-document.getElementById("gauge").style.width=like+"%";
+// 初期ID取得
+const usernameInput=document.getElementById("username");
+const personalitySelect=document.getElementById("personality");
+const relationSelect=document.getElementById("relation");
+
+botMsg=(t)=>typingEffect(()=>addMsg(t,"bot"));
 </script>
 </body>
 </html>
